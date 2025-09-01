@@ -35,7 +35,6 @@ class Agent:
         self.__model__ = AutoModelForCausalLM.from_pretrained(
                     model_path,
                     device_map=device,
-                    torch_dtype=torch.bfloat16,
                     trust_remote_code=False,
             )
         self.__tokenizer__ = AutoTokenizer.from_pretrained(
@@ -204,7 +203,7 @@ class Interaction:
         self.summarizer_active = summarizer_active
         self.summarizer_agent= summarizer_agent
         self.do_stream=do_stream
-
+    #Experimental feature, may not work as intended
     def debate(self,turns:int, prompt:str):
         i=0
         context=prompt
@@ -221,7 +220,7 @@ class Interaction:
             temp_context=""
             i+=1
         return context
-    
+    #Experimental feature, may not work as intended
     def roundtable(self,turns:int, prompt:str):
         i=0
         context=prompt
