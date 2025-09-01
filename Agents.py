@@ -208,8 +208,8 @@ class llamacppAgent:
                     token = delta["content"]
                     print(token, end="", flush=True)
                     full_reply += token
-
-                #print(output["choices"][0]["message"]["content"])
+            else:
+                full_reply=chunks["choices"][0]["message"]["content"]
             return str(full_reply)
         #except Exception as e:
             #return e
