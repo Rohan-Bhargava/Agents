@@ -42,10 +42,27 @@ class Agent:
         )
         set_seed(seed)
 
+    '''
+    Sets up sub-agents with their system prompts and hyperparameters.
+    This allows one model to behave like multiple agents with different personalities and settings, saving on VRAM mainly.
+    sub_agents should be a dictionary of the form:
+    {
+        "Sub-Agent Name":["System Prompt", {Hyperparameters as dictionary}]
+    }
+    '''
     def set_up_sub_agents(self, sub_agents={
         "Default":["You are a helpful AI assitant", 
                    DEFAULT_HYPER_PARAMS]}):
         self.sub_agents = sub_agents
+
+    '''
+    Backend function to generate output from the model with a selected sub-agent.
+    There are three "modes" of operation:
+    "chat" - Uses the chat template for models that support it
+    "pipe" - Uses the transformers pipeline for text-generation
+    "other" - Uses the simple generate function
+    Can also stream output if desired.
+    '''
 
     def agent_generate(self, prompt, selected_sub_agent="Default", mode="chat", can_think=False, stream=False, include_header=True):
         try:
@@ -137,6 +154,7 @@ class llamacppAgent:
         "repetition_penalty":1.0
     }
 
+    #Important to add all sub_agents that one may want to use to the roster paramter.
     def __init__(self, modelpath=None, repoid=None, file_name=None, context_length=4096, seed=9):
         self.sub_agents={
                     "Default":["You are a helpful AI assitant", 
@@ -196,6 +214,10 @@ class llamacppAgent:
         #except Exception as e:
             #return e
 
+'''
+Frontend handler for interactions with one or more agents.
+'''
+
 class Interaction:
     def __init__(self, mode:str,roster={"Default":Agent},summarizer_active=False,summarizer_agent=[],do_stream=False):
         self.mode = mode
@@ -234,6 +256,11 @@ class Interaction:
             i+=1
         return context
     
+    '''
+    Single agent chat function. Allows user to interact with one sub-agent at a time.
+    Has commands for selecting sub-agent, saving chat, clearing chat, and quitting.
+    Saving chat is experimental and may not work as intended.
+    '''
     def single_agent_chat(self, subagent:str="Default", username="User", machinename="AI"):
         try:
             agent = self.roster[subagent]
@@ -250,27 +277,6 @@ class Interaction:
                                         subagent=user_cmd.split()[3].lower()
                                     case "SEED":
                                         agent.seed=int(user_cmd.split()[3])
-                            case "SAVE":
-                                if input("Custom savefile name? (y/N)").lower() == "y":
-                                    file=open(input("Enter path keeping in mind necessary double escapes:"), "w+")
-                                else:
-                                    now = datetime.now()
-                                    timestamp = now.strftime('%Y-%m-%d_%H-%M-%S')
-                                    filename=str(f"chat_{timestamp}.txt")
-                                    file=open(filename, "w+")
-                                if input("Write header (Y/n)?").lower()=="y":
-                                    file.write(
-                                        f"""
-                                        Time:{timestamp}\n
-                                        Model:{agent.model_path}\n
-                                        Sub-Agent:{subagent}\n
-                                        Hyper Parameters:{agent.sub_agents[subagent][1]}\n
-                                        System Prompt:{agent.sub_agents[subagent][0]}\n
-                                        Output:\n
-                                        """
-                                    )
-                                file.write(context)
-                                file.close()
                             case "CLEAR":
                                 match user_cmd.split()[2].upper():
                                     case "CHAT":
@@ -289,7 +295,10 @@ class Interaction:
         except ValueError as ve:
             print(f"Possibly more than one agent? Please try one then. ERROR CODE: {ve}")
 
-    
+    '''
+    Allows user to interact with multiple agents at once.
+    Each agent responds in turn to the user's input, and the context is built up over time.
+    '''
     def multi_agent_chat(self, username="User"):
         try:
             context=f"{username}: "
