@@ -328,7 +328,7 @@ class Interaction:
         try:
             while True:
                 try:
-                    user_cmd+=input("\nModel Prompt>>>")
+                    user_cmd=input("\nModel Prompt>>>")
                     #Activate commands if input starts with /
                     # e.g. Model Prompt>>>/ SELECT SUBAGENT <subagent name>
                     if user_cmd.split()[0]=="/":
