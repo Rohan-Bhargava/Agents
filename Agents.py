@@ -274,7 +274,7 @@ class Interaction:
                             case "SELECT":
                                 match user_cmd.split()[2].upper():
                                     case "SUBAGENT":
-                                        print(f"Changed subagent {subagent} running on {agent.model_path} to {user_cmd.split()[3].lower()} running on {self.roster[user_cmd.split()[3].lower()]}!")
+                                        print(f"Changed subagent {subagent} to {user_cmd.split()[3].lower()}!")
                                         subagent=user_cmd.split()[3].lower()
                                     case "SEED":
                                         agent.seed=int(user_cmd.split()[3])
@@ -282,10 +282,10 @@ class Interaction:
                                         match user_cmd.split()[3].upper():
                                             case "0":
                                                 summarizer_mode=0
-                                                print(f"Summarizer turned ON using {summarizer_agent[0]} with sub-agent {summarizer_agent[1]}!")
+                                                print(f"Summarizer turned OFF!")
                                             case "1":
                                                 summarizer_mode=1
-                                                print("Summarizer turned OFF!")
+                                                print(f"Summarizer turned ON using {summarizer_agent[0]} with sub-agent {summarizer_agent[1]}!")
                                             case _:
                                                 print("Command not recognized.")
                                     case _:
@@ -324,10 +324,8 @@ class Interaction:
     Allows user to interact with multiple agents at once.
     Each agent responds in turn to the user's input, and the context is built up over time.
     '''
-    def multi_agent_chat(self, username="User", summarizer_agent=[Agent, str], summarizer_mode:int=0):
+    def multi_agent_chat(self, username="User", summarizer_agent=[Agent, str], summarizer_mode:int=0, explicit_print_subagent_names:bool=False):
         try:
-            context=f"{username}: "
-            temp_contex=""
             while True:
                 try:
                     user_cmd+=input("\nModel Prompt>>>")
@@ -343,10 +341,13 @@ class Interaction:
                                             match user_cmd.split()[3].upper():
                                                 case "0":
                                                     summarizer_mode=0
-                                                    print(f"Summarizer turned ON using {summarizer_agent[0]} with sub-agent {summarizer_agent[1]}!")
+                                                    print(f"Summarizer turned OFF!")
                                                 case "1":
                                                     summarizer_mode=1
-                                                    print("Summarizer turned OFF!")
+                                                    print(f"Summarizer turned ON using {summarizer_agent[0]} with sub-agent {summarizer_agent[1]}!\n Summarizing mode set to summarize all agent responses at once!")
+                                                case "2":
+                                                    summarizer_mode=2
+                                                    print(f"Summarizer turned ON using {summarizer_agent[0]} with sub-agent {summarizer_agent[1]}!\n Summarizing mode set to summarize each agent responses one at a time!")
                                                 case _:
                                                     print("Command not recognized.")
                                         case _:
@@ -368,13 +369,22 @@ class Interaction:
                                 case _:
                                     print("Command not recognized.")
                     else:
-                        temp_context=context
+                        context=f"{username}: "
+                        context+=user_cmd
+                        buffer_contex_responses_only=""
                         for subagent,agent in self.roster.items():
-                            temp_context+=f"\n{subagent}: "
-                            #print(f"{subagent}: ")
-                            temp_context+=agent.agent_generate(mode=self.mode,stream=self.do_stream,prompt=context,selected_sub_agent=subagent)
-                            temp_contex+=f"\n{username}: "
-                        context+=temp_contex
+                            buffer_contex_responses_only+=f"\n{subagent}: "
+                            if explicit_print_subagent_names:
+                                print(f"{subagent}: ")
+                            if summarizer_mode==2:
+                                individual_response=agent.agent_generate(mode=self.mode,stream=self.do_stream,prompt=context,selected_sub_agent=subagent)
+                                buffer_contex_responses_only+=summarizer_agent[0].agent_generate(mode=self.mode,stream=False,prompt=individual_response,selected_sub_agent=summarizer_agent[1])
+                            else:
+                                buffer_contex_responses_only+=agent.agent_generate(mode=self.mode,stream=self.do_stream,prompt=context,selected_sub_agent=subagent)
+                        if summarizer_mode==1:
+                            context+=summarizer_agent[0].agent_generate(mode=self.mode,stream=False,prompt=buffer_contex_responses_only,selected_sub_agent=summarizer_agent[1])
+                        else:
+                            context+=buffer_contex_responses_only
                 except KeyboardInterrupt as k:
                     print(f"\nSTOPPED GENERATION BY USER INTERRUPT!")
                 except Exception as e:
