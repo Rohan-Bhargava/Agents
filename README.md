@@ -1,4 +1,4 @@
-##About
+## About
 
 I created a simple agent handler for quickly deploying LLMs from the transformers library in both GGUF and .safetensors format.
 This handler was created to speed up my own learning of LLMs.
@@ -15,7 +15,7 @@ This library is not a pip package yet so Agents.py will need to be in the same d
 This project will be periodically updated.
 Any feedback, suggestions, or collaboration is welcome!
 
-##Installation
+## Installation
 ```
 git clone https://github.com/Rohan-Bhargava/Agents.git
 cd Agents
